@@ -1,0 +1,17 @@
+system:
+  bind_addr: tcp://0.0.0.0:3333
+  deadline_timeout: 30s
+  stream:
+    deadline_timeout: 30s
+    connection_timeout: 5s
+    max_connection_per_host: 1
+    max_connections: 1000
+
+logger:
+  console:
+    enabled: true
+    enable_color: true
+    log_level: 6
+
+
+
