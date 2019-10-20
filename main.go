@@ -106,13 +106,13 @@ func handleRequest(conn net.Conn) {
 	conn.Write([]byte(`
 Telnet proxy v0.1
 Supported commands:
-	CONNECT <IP Address> <Port>
+	CONN <IP Address> <Port>
 `))
 
 	//Block of command reading
 READ_COMMAND:
 	conn.SetDeadline(time.Now().Add(Config.System.DeadLineTimeout))
-	conn.Write([]byte("\n>>> "))
+	conn.Write([]byte(">>> "))
 	n, err := conn.Read(buf)
 	if err != nil {
 		lg.InfoF("No commands from client, connection closed")
@@ -121,7 +121,7 @@ READ_COMMAND:
 	err, command, arguments := parseCommand(buf[:n])
 	if err != nil {
 		lg.Errorf("error parse command: %v", err.Error())
-		conn.Write([]byte("\n>>>ERROR_PARSE_COMMAND<<< Message: " + err.Error()))
+		conn.Write([]byte("INCORRECT_OR_NOT_SUPPORTED_COMMAND###" + err.Error() + "\n"))
 		goto READ_COMMAND
 	}
 
@@ -129,33 +129,27 @@ READ_COMMAND:
 	case CONN:
 		args := arguments.(*structs.Connect)
 		if !poll.IsConnectAllowed(args.Ip) {
-			conn.Write([]byte(fmt.Sprintf("\n>>>CONNECTION_LIMIT<<< Message: connect to %v is denied by limits\n", args.Ip)))
+			conn.Write([]byte(fmt.Sprintf("CONNECTION_LIMIT###connect to %v is denied by limits\n", args.Ip)))
 			goto READ_COMMAND
 		}
-		conn.Write([]byte(fmt.Sprintf("\n>>>CONNECTING<<< Message: connect to %v:%v\n", args.Ip, args.Port)))
 		err := connect(conn, args.Ip, args.Port)
-		conn.Write([]byte(fmt.Sprintf(`
->>>CONNECTION_CLOSED<<< Message: %v
-`, err)))
+		conn.Write([]byte(fmt.Sprintf("CONNECTION_CLOSED###%v\n>>>\n", err)))
 		return
 	case CONN_LIST:
 		args := arguments.(*structs.Connect)
 		if !poll.IsConnectAllowed(args.Ip) {
-			conn.Write([]byte(fmt.Sprintf("\n>>>CONNECTION_LIMIT<<< Message: connect to %v is denied by limits\n", args.Ip)))
+			conn.Write([]byte(fmt.Sprintf("CONNECTION_LIMIT###connect to %v is denied by limits\n", args.Ip)))
 			goto READ_COMMAND
 		}
-		conn.Write([]byte(fmt.Sprintf("\n>>>CONNECTING<<< Message: connect to %v:%v\n", args.Ip, args.Port)))
 		err := connect(conn, args.Ip, args.Port)
-		conn.Write([]byte(fmt.Sprintf(`
->>>CONNECTION_CLOSED<<< Message: %v
-`, err)))
+		conn.Write([]byte(fmt.Sprintf("CONNECTION_CLOSED###%v\n", err)))
 		return
 	default:
 		if getPreparedLine(string(buf[:n])) == "" {
 			goto READ_COMMAND
 		}
 		lg.Errorf("incorrect command (%v) ", getPreparedLine(string(buf[:n])))
-		conn.Write([]byte(fmt.Sprintf("\n>>>INCORRECT_OR_NOT_SUPPORTED_COMMAND<<<")))
+		conn.Write([]byte(fmt.Sprintf("INCORRECT_OR_NOT_SUPPORTED_COMMAND###\n")))
 	}
 	goto READ_COMMAND
 }
@@ -223,6 +217,7 @@ func connect(conn net.Conn, ip string, port int) error {
 		return tracerr.Wrap(err)
 	}
 	lg.NoticeF("success open connect to %v from channel %v", fmt.Sprintf("%v:%v", ip, port), conn.RemoteAddr().String())
+	conn.Write([]byte("CONNECTED###Success connected\n>>>"))
 	defer func() {
 		lg.NoticeF("Device %v disconnected, connection closed", telnet.RemoteAddr())
 		telnet.Close()
