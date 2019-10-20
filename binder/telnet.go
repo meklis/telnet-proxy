@@ -1,10 +1,10 @@
 package binder
 
 import (
-	"bitbucket.org/meklis/helpprovider_snmp/logger"
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/meklis/http-snmpwalk-proxy/logger"
 	"github.com/ztrue/tracerr"
 	"io"
 	"net"

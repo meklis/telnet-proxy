@@ -1,9 +1,9 @@
 package main
 
 import (
-	"bitbucket.org/meklis/helpprovider_snmp/logger"
 	"flag"
 	"fmt"
+	"github.com/meklis/http-snmpwalk-proxy/logger"
 	"github.com/meklis/telnet-proxy/binder"
 	"github.com/meklis/telnet-proxy/config"
 	"github.com/meklis/telnet-proxy/poller"
